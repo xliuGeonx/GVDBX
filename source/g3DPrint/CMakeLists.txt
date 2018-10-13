@@ -4,6 +4,20 @@ Project(${PROJNAME})
 Message(STATUS "-------------------------------")
 Message(STATUS "Processing Project ${PROJNAME}:")
 
+FUNCTION(COLLECT_DDL_FROM_FILES DIRS)
+  FOREACH(folder ${${DIRS}})
+    FILE(
+      GLOB
+      source_files_one_dir
+      ${folder}/*.dll    
+      ${folder}/*.lib          
+      ${folder}/*.ptx  
+      ${folder}/*.glsl  
+    )
+    LIST(APPEND SOURCE_FILES_LIST ${source_files_one_dir})
+  ENDFOREACH()
+  SET(USED_DLLS ${USED_DLLS} ${SOURCE_FILES_LIST} PARENT_SCOPE)
+ENDFUNCTION()# 
 ####################################################################################
 # Bootstrap
 #
@@ -111,3 +125,8 @@ message ( STATUS "CMAKE_CURRENT_BINARY_DIR: ${CMAKE_CURRENT_BINARY_DIR}" )
 message ( STATUS "EXECUTABLE_OUTPUT_PATH: ${EXECUTABLE_OUTPUT_PATH}" )
 message ( STATUS "ASSET_PATH: ${ASSET_PATH}")
 
+COLLECT_DDL_FROM_FILES(GVDB_LIB_DIR)
+MESSAGE(STATUS "Libraries that will be copied: ${USED_DLLS}")
+FOREACH( f ${USED_DLLS})
+  ADD_CUSTOM_COMMAND(TARGET ${PROJNAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${f} $<TARGET_FILE_DIR:${PROJNAME}> )  
+ENDFOREACH() 
