@@ -95,6 +95,7 @@ bool Sample::init ()
 	printf ( "Starting GVDB.\n" );		
 	gvdb1.SetDebug ( true );
 	gvdb1.SetVerbose ( true );		// enable/disable console output from gvdb
+	gvdb1.SetProfile(false, true);
 	gvdb1.SetCudaDevice ( GVDB_DEV_FIRST );
 	gvdb1.Initialize ();								
 	gvdb1.StartRasterGL ();			// Start GVDB Rasterizer. Requires an OpenGL context.
