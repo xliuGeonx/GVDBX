@@ -39,7 +39,7 @@ using namespace nvdb;
 #include <algorithm>
 
 VolumeGVDB	gvdb1;
-VolumeGVDB	gvdb2;
+//VolumeGVDB	gvdb2;
 
 //#define USE_GVDB2
 
@@ -102,6 +102,7 @@ bool Sample::init ()
 	gvdb1.AddPath ( "../source/shared_assets/" );
 	gvdb1.AddPath ( ASSET_PATH );
 
+    //gvdb1.AddPath(GVDBX);
 #ifdef USE_GVDB2
 	// GVDB #2
 	gvdb2.SetVerbose(true);		// enable/disable console output from gvdb
@@ -263,7 +264,7 @@ void Sample::display()
 	case 3: sh = SHADE_VOLUME;		break;
 	};
 	if (m_chan == 0) gvdb = &gvdb1;
-	if (m_chan == 1) gvdb = &gvdb2;
+	//$if (m_chan == 1) gvdb = &gvdb2;
 	
 	gvdb->Render( sh, m_chan, 0 );	// Render voxels
 	

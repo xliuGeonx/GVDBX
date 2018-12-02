@@ -90,6 +90,8 @@ _LIST_ALL_SOURCE ( FILES ${SOURCE_FILES} ${COMMON_SOURCE_FILES} ${PACKAGE_SOURCE
 include_directories ("${CMAKE_CURRENT_SOURCE_DIR}")    
 add_definitions(-DGVDB_IMPORTS -DGLEW_STATIC -DGLEW_NO_GLU)  
 add_definitions(-DASSET_PATH="${ASSET_PATH}/")
+SET(GVDBX "XL/book")
+add_definitions(-DGVDBX=${GVDBX})
 add_executable (${PROJNAME} ${ALL_SOURCE_FILES} )
 set_property ( TARGET ${PROJNAME} APPEND PROPERTY DEPENDS ${PTX_SOURCES} )
 
