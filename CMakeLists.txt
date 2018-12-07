@@ -1,0 +1,456 @@
+# BARRACUDA - Copyright (C) 2015-2016 geonX
+#
+# Please report all bugs and problems to <support@geonx.com>.
+# 
+# Main CMakeLists
+
+CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
+CMAKE_POLICY(SET CMP0054 NEW)
+# -----------------------------------------------------------------------------
+# ------------------------- Functions and macro -------------------------------
+# -----------------------------------------------------------------------------
+MACRO(opt OPTION HELP VALUE)
+ OPTION(BARRACUDA_USE_${OPTION} ${HELP} ${VALUE})
+ SET(OPT_TEXI "${OPT_TEXI}\n@item BARRACUDA_USE_${OPTION}\n${HELP} (default: ${VALUE})")
+ENDMACRO(opt)
+MACRO(optpp OPTION HELP VALUE)
+ OPTION(POSTPRO_USE_${OPTION} ${HELP} ${VALUE})
+ SET(OPT_TEXIP "${OPT_TEXIP}\n@item POSTPRO_USE_${OPTION}\n${HELP} (default: ${VALUE})")
+ENDMACRO(optpp)
+
+FUNCTION(COLLECT_SRC_FROM_DIRS DIRS)
+  FOREACH(folder ${${DIRS}})
+    FILE(
+      GLOB
+      source_files_one_dir
+      ${folder}/[^.]*.h      
+      ${folder}/[^.]*.hxx          
+      ${folder}/[^.]*.ipp  
+      ${folder}/[^.]*.hpp  
+      ${folder}/[^.]*.hh
+      ${folder}/[^.]*.cc      
+      ${folder}/[^.]*.c
+      ${folder}/[^.]*.cxx
+      ${folder}/[^.]*.cpp
+      ${folder}/[^.]*.occa
+    )
+    LIST(APPEND SOURCE_FILES_LIST ${source_files_one_dir})
+  ENDFOREACH()
+  SET(SOURCE_FILES ${SOURCE_FILES_LIST} PARENT_SCOPE)
+ENDFUNCTION()# 
+# -----------------------------------------------------------------------------
+FUNCTION(COLLECT_DDL_FROM_FILES  files_list) 
+  FOREACH(f ${${files_list}})
+    GET_FILENAME_COMPONENT(f_ext ${f} EXT )
+    IF(f_ext)
+      IF(${f_ext} STREQUAL ".so" )
+        IF(NOT WIN32)
+          GET_FILENAME_COMPONENT(f_without_ext ${f} NAME_WE )
+          GET_FILENAME_COMPONENT(f_dir ${f} DIRECTORY)
+          SET(f_pattern  "${f_without_ext}.so*" )
+          FILE(GLOB  all_f ${f_dir}/${f_pattern})
+          LIST(APPEND dlls_list ${all_f})
+        ENDIF()
+      ELSEIF(${f_ext} STREQUAL ".dll")
+        IF(WIN32)
+          LIST(APPEND dlls_list ${f})
+        ENDIF()
+      ELSEIF(${f_ext} STREQUAL ".lib")
+        IF(WIN32)        
+          GET_FILENAME_COMPONENT(f_dir ${f} DIRECTORY )
+          GET_FILENAME_COMPONENT(f_without_ext ${f} NAME_WE )
+          SET(f_dd "${f_dir}/${f_without_ext}.dll")
+          IF(EXISTS "${f_dd}")          
+            LIST(APPEND dlls_list ${f_dd})
+          ELSE()
+            SET(f_dd "${f_dir}/../bin/${f_without_ext}.dll")
+            IF(EXISTS "${f_dd}")          
+              LIST(APPEND dlls_list ${f_dd})
+            ELSE()
+              STRING(REPLACE "lib" "" f_without_lib ${f_without_ext})
+              SET(f_dd "${f_dir}/${f_without_lib}.dll")
+              IF(EXISTS "${f_dd}")            
+                LIST(APPEND dlls_list ${f_dd})
+              ENDIF()
+            ENDIF()       
+          ENDIF()
+        ENDIF()
+      ENDIF()
+    ENDIF()
+  ENDFOREACH()
+  SET(USED_DLLS ${USED_DLLS} ${dlls_list} PARENT_SCOPE)
+ENDFUNCTION()
+
+# Additional folders to search for CMake modules
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+# Set initial value of compiler flags
+set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_MODULE_PATH}/c_flags_override.cmake)
+# -----------------------------------------------------------------------------
+# Define project with default languages (C and CXX)
+PROJECT(Barracuda)
+# -----------------------------------------------------------------------------
+# ----------------------------- Project configuration -------------------------
+# -----------------------------------------------------------------------------
+
+# Environment
+SET(ENV_PLATFORM $ENV{PLATFORM})
+
+opt(RELEASE_VERSION "Compile external release version" OFF)
+
+# Get git revision number
+FIND_PACKAGE(Git)
+# Get git branch name
+SET (GIT_COMMAND)
+SET(GIT_VERSION "Undetermined")
+IF(GIT_FOUND)
+  SET(GIT_COMMAND ${GIT_EXECUTABLE})
+  SET(GIT_VERSION  ${GIT_VERSION_STRING})
+ENDIF()
+MARK_AS_ADVANCED(GIT_COMMAND GIT_VERSION)
+
+MESSAGE(STATUS "GIT_COMMAND: ${GIT_COMMAND} , GIT_VERSION: ${GIT_VERSION}")
+EXECUTE_PROCESS(COMMAND ${GIT_COMMAND} branch 
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                OUTPUT_VARIABLE  GIT_INFO)
+MESSAGE(STATUS "GIT_INFO: ${GIT_INFO}")
+
+STRING(REGEX REPLACE "\r?\n" ";" LIST_OF_GIT_BRANCH "${GIT_INFO}")
+FOREACH(line ${LIST_OF_GIT_BRANCH})
+  STRING(REGEX MATCH "^[*]" BARRACUDA_BRANCH_NAME ${line} )
+  IF(BARRACUDA_BRANCH_NAME)
+    SET(BARRACUDA_BRANCH_NAME ${line})
+    STRING(REGEX REPLACE  "[*' ']" "" BARRACUDA_BRANCH_NAME ${line} )
+    BREAK()
+  ENDIF()
+ENDFOREACH()
+
+
+SET(DefinitionFlags )
+
+IF(BARRACUDA_USE_RELEASE_VERSION)
+  LIST(APPEND DefinitionFlags "RELEASE_VERSION")
+ENDIF()
+
+IF (WIN32)
+  LIST(APPEND DefinitionFlags "_USE_MATH_DEFINES")
+  LIST(APPEND DefinitionFlags "_CRT_SECURE_NO_WARNINGS")
+ENDIF()
+#opt(SINGLE_PRECISION "Use single precision" ON)
+#IF(BARRACUDA_USE_SINGLE_PRECISION)
+#  LIST(APPEND DefinitionFlags "USE_FLOAT")
+#ENDIF()
+
+# find mpi 
+#FIND_PACKAGE(MPI REQUIRED)
+#INCLUDE_DIRECTORIES(SYSTEM ${MPI_INCLUDE_PATH})
+# find Boost
+SET(Boost_NO_SYSTEM_PATHS true)
+SET (Boost_USE_STATIC_LIBS ON CACHE BOOL "use static libraries from Boost")
+SET(Boost_USE_MULTITHREAD ON) #SET a flag
+SET(BOOST_LIB_LIST)
+IF(NOT WIN32)
+  #  LIST(APPEND BOOST_LIB_LIST program_options log log_setup thread regex mpi serialization iostreams filesystem system)
+   LIST(APPEND BOOST_LIB_LIST program_options log log_setup thread regex serialization iostreams filesystem system locale)
+  FIND_PACKAGE(ICU REQUIRED COMPONENTS i18n uc)
+  INCLUDE_DIRECTORIES(${ICU_INCLUDE_DIRS})
+  LINK_DIRECTORIES(${ICU_LIBRARY_DIRS})
+  COLLECT_DDL_FROM_FILES(ICU_LIBRARIES)
+  FIND_PACKAGE(ZLIB REQUIRED)
+  INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIRS})
+  LINK_DIRECTORIES(${ZLIB_LIBRARY_DIRS})
+  COLLECT_DDL_FROM_FILES(ZLIB_LIBRARIES)
+ELSE()
+  #  LIST(APPEND BOOST_LIB_LIST regex mpi serialization iostreams system filesystem )
+  LIST(APPEND BOOST_LIB_LIST regex serialization iostreams system filesystem )
+ENDIF()
+FIND_PACKAGE(Boost REQUIRED COMPONENTS ${BOOST_LIB_LIST})
+INCLUDE_DIRECTORIES(SYSTEM ${Boost_INCLUDE_DIRS})
+LINK_DIRECTORIES(${Boost_LIBRARY_DIRS})
+SET(BOOST_DLLS)
+IF(NOT Boost_USE_STATIC_LIBS )
+  IF(WIN32)    
+    ADD_DEFINITIONS(-DBOOST_ALL_NO_LIB)
+    ADD_DEFINITIONS(-DBOOST_ALL_DYN_LINK)
+  ENDIF()
+  FOREACH(l ${BOOST_LIB_LIST})
+    STRING(TOUPPER ${l} v)
+    LIST(APPEND BOOST_DLLS ${Boost_${v}_LIBRARY_RELEASE})
+  ENDFOREACH()
+  MESSAGE( " BOOST_DLLS :-> ${BOOST_DLLS}")
+  COLLECT_DDL_FROM_FILES(BOOST_DLLS)
+ENDIF()
+
+# find OCCA 
+FIND_PACKAGE(OCCA REQUIRED)
+INCLUDE_DIRECTORIES(SYSTEM ${OCCA_INCLUDE_DIRS})
+LINK_DIRECTORIES(${OCCA_LIBRARY_DIRS})
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+SET(OCCA_KERNELS_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/Solvers/src/OccaKernels)
+COLLECT_DDL_FROM_FILES(OCCA_LIBRARY)
+IF(WIN32)
+ COLLECT_DDL_FROM_FILES(OCCA_PTHREADVC_LIBRARY)
+ENDIF()
+
+#Find intel pardiso
+SET (MKL_USE_STATIC ON CACHE BOOL "use static libraries for mkl")
+FIND_PACKAGE(MKL REQUIRED)
+INCLUDE_DIRECTORIES(SYSTEM ${MKL_INCLUDE_DIRS})
+IF(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+  ADD_COMPILE_OPTIONS(-m64)
+ENDIF()
+MESSAGE(STATUS "Intel MKL_LIBRARIES: ${MKL_LIBRARIES}")
+IF(NOT MKL_USE_STATIC)  
+  COLLECT_DDL_FROM_FILES(MKL_LINK_LIBS)
+ELSE()
+  LIST(APPEND DefinitionFlags "MKL_USE_STATIC")
+  IF(WIN32)
+    COLLECT_DDL_FROM_FILES(MKL_LINK_LIBS)
+  ENDIF()
+ENDIF()
+
+# find ANN
+SET (ANN_USE_STATIC OFF CACHE BOOL "use static libraries from ANN")
+FIND_PACKAGE(ANN REQUIRED)
+INCLUDE_DIRECTORIES(SYSTEM ${ANN_INCLUDE_DIRS})
+LINK_DIRECTORIES(${ANN_LIBRARY_DIRS})
+
+IF (${ANN_USE_STATIC} STREQUAL "OFF") 
+  COLLECT_DDL_FROM_FILES(ANN_LIBRARY)
+ENDIF()
+# find HDF5
+opt(HDF5 "Enable HDF5" ON)
+IF(WIN32)  
+  SET (LIB_TYPE SHARED) # or SHARED  STATIC
+  STRING(TOLOWER ${LIB_TYPE} SEARCH_TYPE)
+  FIND_PACKAGE(HDF5 NAMES hdf5 COMPONENTS CXX ${SEARCH_TYPE} REQUIRED)  #FIND_PACKAGE(HDF5 COMPONENTS C CXX HL REQUIRED)
+  INCLUDE_DIRECTORIES(SYSTEM ${HDF5_INCLUDE_DIR})
+  SET(HDF5_LINK_DIR ${HDF5_ROOT}/lib)
+  LINK_DIRECTORIES(${HDF5_LINK_DIR})  
+  LIST(APPEND DefinitionFlags "H5_BUILT_AS_DYNAMIC_LIB")
+  IF(${SEARCH_TYPE} STREQUAL "shared")
+    SET(HDF5_LINK_RUNTIME_LIBS)
+    LIST(APPEND HDF5_LINK_RUNTIME_LIBS ${HDF5_ROOT}/bin/hdf5_cpp.dll)
+    LIST(APPEND HDF5_LINK_RUNTIME_LIBS ${HDF5_ROOT}/bin/hdf5.dll)
+    LIST(APPEND HDF5_LINK_RUNTIME_LIBS ${HDF5_ROOT}/bin/szip.dll)
+    LIST(APPEND HDF5_LINK_RUNTIME_LIBS ${HDF5_ROOT}/bin/zlib.dll)
+    COLLECT_DDL_FROM_FILES(HDF5_LINK_RUNTIME_LIBS)  
+  ENDIF()
+  SET(HDF5_LINK_LIBS ${HDF5_LINK_LIBS} ${HDF5_CXX_${LIB_TYPE}_LIBRARY}) 
+ELSE()
+  FIND_PACKAGE(HDF5 COMPONENTS CXX REQUIRED)
+  INCLUDE_DIRECTORIES(SYSTEM ${HDF5_INCLUDE_DIRS})
+  LINK_DIRECTORIES(${HDF5_LIBRARY_DIRS}) 
+  SET(HDF5_LINK_LIBS ${HDF5_CXX_LIBRARIES})
+  COLLECT_DDL_FROM_FILES(HDF5_LINK_LIBS)
+ENDIF()
+#  SET(HAVE_HDF5 TRUE)
+LIST(APPEND DefinitionFlags "HAVE_HDF5")
+
+# find PETSC
+opt(PETSC "Enable PETSC" OFF)
+IF(BARRACUDA_USE_PETSC)
+  FIND_PACKAGE(PETSc REQUIRED)
+  INCLUDE_DIRECTORIES(SYSTEM ${PETSC_INCLUDE_DIRS})
+  LINK_DIRECTORIES(${PETSC_LIBRARY_DIRS})
+#  SET(HAVE_PETSC TRUE)
+  LIST(APPEND DefinitionFlags "HAVE_PETSC")
+  
+#find mpi 
+  FIND_PACKAGE(MPI REQUIRED)
+  INCLUDE_DIRECTORIES(SYSTEM ${MPI_INCLUDE_PATH})
+  
+  LIST(APPEND DefinitionFlags "PARALLEL")
+ENDIF(BARRACUDA_USE_PETSC)
+
+# find YAML
+FIND_PACKAGE(LibYAML REQUIRED)
+INCLUDE_DIRECTORIES(SYSTEM ${LIBYAML_INCLUDE_DIRS})
+LINK_DIRECTORIES(${LIBYAML_LIBRARY_DIRS})
+COLLECT_DDL_FROM_FILES(LIBYAML_LIBRARIES)
+IF(WIN32)
+# COLLECT_DDL_FROM_FILES(LIBYAML_LIBRARIES)
+ ADD_DEFINITIONS(-DYAML_DECLARE_STATIC)
+ENDIF()
+
+IF(NOT BARRACUDA_BRANCH_NAME)
+  SET(BARRACUDA_BRANCH_NAME "Undetermined")
+ENDIF()
+MESSAGE(STATUS "BARRACUDA_BRANCH_NAME: ${BARRACUDA_BRANCH_NAME}")
+# Set BARRACUDA_VERSION and BARRACUDA_VERSION_FULL
+INCLUDE(VersionDefinition.txt)
+SET(BARRACUDA_VERSION_MAJOR ${MAJOR_VERSION} )
+SET(BARRACUDA_VERSION_MINOR ${MINOR_VERSION})
+SET(BARRACUDA_VERSION_TWEAK ${PATCH_VERSION})
+  
+
+IF(BARRACUDA_USE_RELEASE_VERSION)
+  SET(BARRACUDA_VERSION_PATCH ${DEV_STAGE_STATUS})
+ELSE()
+  SET(BARRACUDA_VERSION_PATCH ${BARRACUDA_BRANCH_NAME}_branch)  
+ENDIF()
+
+SET(BARRACUDA_VERSION "${BARRACUDA_VERSION_MAJOR}.${BARRACUDA_VERSION_MINOR}")
+SET(BARRACUDA_VERSION_FULL "${BARRACUDA_VERSION}.${BARRACUDA_VERSION_PATCH}.${BARRACUDA_VERSION_TWEAK}")
+MESSAGE(STATUS "BARRACUDA_VERSION_FULL:  ${BARRACUDA_VERSION_FULL} ")
+IF(WIN32)
+  SET(OCCA_CACHE_DIR "/AppData/Local/geonX\ S.A/Barracuda_${BARRACUDA_VERSION_MAJOR}_${BARRACUDA_VERSION_MINOR}_${BARRACUDA_VERSION_PATCH}_.${BARRACUDA_VERSION_TWEAK}")
+ELSE()
+  SET(OCCA_CACHE_DIR "/._geonX_S.A/Barracuda_${BARRACUDA_VERSION_MAJOR}_${BARRACUDA_VERSION_MINOR}_${BARRACUDA_VERSION_PATCH}_${BARRACUDA_VERSION_TWEAK}")
+ENDIF()
+
+
+SET(USER_MESSAGE "")
+SET(NOT_SUPPORTED_VERSION  ON)
+MATH(EXPR COMPUTE_EVEN_MINOR '${MINOR_VERSION}%2')
+IF( ( NOT( COMPUTE_EVEN_MINOR EQUAL 0 ) ) AND ( DEV_STAGE_STATUS EQUAL 3 )  )
+  SET(NOT_SUPPORTED_VERSION  OFF)
+ENDIF()
+IF(NOT_SUPPORTED_VERSION)
+  SET(USER_MESSAGE "WARNING: This version of Barracuda is under development and should not be used in production. ")
+ENDIF()
+# Set default CMAKE_BUILD_TYPE
+IF(DEFINED CMAKE_BUILD_TYPE)
+  SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "Choose build type")
+ELSE()
+  SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Choose build type")
+ENDIF()
+
+
+# Set makefile verbosity in basic options instead of advanced
+MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
+
+
+
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Copyright.txt.in ${CMAKE_BINARY_DIR}/Copyright.txt)
+
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/BarracudaConfig.h.in 
+         ${CMAKE_BINARY_DIR}/BarracudaConfig.h)
+
+INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR})
+FIND_PACKAGE(OpenMP)
+IF (OPENMP_FOUND)
+  SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+ENDIF()
+IF(MSVC)
+  SET(CMAKE_EXE_LINKER_FLAGS
+      "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:LIBCMT")
+ENDIF()
+
+IF(BARRACUDA_USE_RELEASE_VERSION)
+  MESSAGE( STATUS "Release version is compiled. Barracuda testcases and validations are activated.")
+  SET(BARRACUDA_USE_VALIDATIONS ON)
+  SET(BARRACUDA_USE_COMPARE_RESULT_TESTCASES ON)
+  SET(BARRACUDA_USE_TESTCASES ON)
+  SET(POSTPRO_USE_TESTCASES ON)
+  SET(Barracuda.Trajectory_TEST OFF)
+  #SET(Barracuda.Solvers_VALIDATION OFF)
+  #SET(Barracuda.Solvers_TEST OFF)
+  
+  SET(Barracuda.LogFile_TEST OFF)
+  SET(Barracuda.Octree_TEST OFF)
+ENDIF()
+IF(BARRACUDA_USE_VALIDATIONS)
+  SET(BARRACUDA_USE_COMPARE_RESULT_TESTCASES ON)
+ENDIF()
+# -----------------------------------------------------------------------------
+# ------------------ Building/Testing/Documentation ---------------------------
+# -----------------------------------------------------------------------------
+# Wrapper around compilation commands for better output in CDash
+# -see https://blog.kitware.com/organizing-your-dashboards-with-subprojects-an-addendum/
+SET(CTEST_USE_LAUNCHERS 1)
+INCLUDE(CTest)  # To use CTest input files - must be in main CMakeLists.txt
+MARK_AS_ADVANCED(BUILD_TESTING)
+MARK_AS_ADVANCED(DART_TESTING_TIMEOUT)
+
+
+OPT(VALIDATIONS "Execute validation cases of Barracuda" ON)
+OPT(TESTCASES "Execute test cases of Barracuda" ON)
+OPT(COMPARE_RESULT_TESTCASES "Execute test cases of vectors comparaison" ON)
+OPTPP(TESTCASES "Execute test cases of Postprocessing" ON)
+
+SET(CTEST_ENV_VARS )
+
+LIST(APPEND CTEST_ENV_VARS "OCCA_DIR=${OCCA_ROOT}")
+IF(MSVC)
+  LIST(APPEND CTEST_ENV_VARS "MSV_VERSION=${MSVC_VERSION}")
+ELSE()
+  LIST(APPEND CTEST_ENV_VARS "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${MKL_ROOT}/lib/intel64")
+ENDIF()
+# CTestCustom file must be located in build folder
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/CTestCustom.cmake.in
+               ${CMAKE_BINARY_DIR}/CTestCustom.cmake @ONLY)
+
+# -- Include directories --
+ADD_SUBDIRECTORY(compare_results)
+ADD_SUBDIRECTORY(generic_tools)
+ADD_SUBDIRECTORY(InputOutput)
+#ADD_SUBDIRECTORY(readCLI)
+ADD_SUBDIRECTORY(readSTL)
+ADD_SUBDIRECTORY(Trajectory)
+ADD_SUBDIRECTORY(Octree)
+ADD_SUBDIRECTORY(Solvers)
+ADD_SUBDIRECTORY(Barracuda)
+ADD_SUBDIRECTORY(Postprocessing)
+
+
+
+# -- Code style checking --
+
+opt(KWStyle "Enable  Code style checking" OFF)
+
+IF(BARRACUDA_USE_KWStyle)
+  ADD_SUBDIRECTORY(cmake/KWStyle)
+ENDIF()
+
+IF(BARRACUDA_USE_RELEASE_VERSION)
+  # ---------------------------------Packaging ------------------------------
+  SET(CPACK_PACKAGE_DESCRIPTION "Barracuda ${BARRACUDA_VERSION_FULL}")
+  SET(CPACK_PACKAGE_VENDOR "GeonX")
+  SET(CPACK_PACKAGE_NAME "Barracuda ${BARRACUDA_VERSION_MAJOR}.${BARRACUDA_VERSION_MINOR}.${BARRACUDA_VERSION_PATCH}" )
+
+  SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_BINARY_DIR}/Copyright.txt")
+  SET(CPACK_PACKAGE_VERSION_MAJOR "${BARRACUDA_VERSION_MAJOR}" )
+  SET(CPACK_PACKAGE_VERSION_MINOR "${BARRACUDA_VERSION_MINOR}")
+  SET(CPACK_PACKAGE_VERSION_PATCH "${BARRACUDA_VERSION_PATCH}")
+  SET(CPACK_PACKAGE_VERSION_BUILD "${BARRACUDA_VERSION_TWEAK}")
+  
+  SET(CPACK_PACKAGE_INSTALL_DIRECTORY 
+      "Barracuda_${CPACK_PACKAGE_VERSION_MAJOR}_${CPACK_PACKAGE_VERSION_MINOR}_${CPACK_PACKAGE_VERSION_PATCH}_${CPACK_PACKAGE_VERSION_BUILD}")
+  
+  SET(CPACK_STRIP_FILES TRUE)
+
+  SET(CPACK_PACKAGE_FILE_NAME
+      "Barracuda_${CPACK_PACKAGE_VERSION_MAJOR}_${CPACK_PACKAGE_VERSION_MINOR}_${CPACK_PACKAGE_VERSION_PATCH}_${CPACK_PACKAGE_VERSION_BUILD}")
+  SET(CPACK_SOURCE_PACKAGE_FILE_NAME
+      "Barracuda_${CPACK_PACKAGE_VERSION_MAJOR}_${CPACK_PACKAGE_VERSION_MINOR}_${CPACK_PACKAGE_VERSION_PATCH}_${CPACK_PACKAGE_VERSION_BUILD}")
+  SET(CPACK_PACKAGE_INSTALL_DIRECTORY "${CPACK_PACKAGE_NAME}")
+  SET(CPACK_COMPONENTS_ALL BARRACUDA_EXEC Postprocessing_EXEC BARRACUDA_OCCA BARRACUDA_OCCA_KERNELS)
+
+  SET(CPACK_COMPONENT_BARRACUDA_EXEC_DISPLAY_NAME "Barracuda solver")
+  SET(CPACK_COMPONENT_BARRACUDA_EXEC_DESCRIPTION "Barracuda a GPU solver")
+  SET(CPACK_COMPONENT_BARRACUDA_EXEC_GROUP "Executables")
+
+  SET(CPACK_COMPONENT_POSTPROCESSING_EXEC_DISPLAY_NAME "Postprocessing App")
+  SET(CPACK_COMPONENT_POSTPROCESSING_EXEC_DESCRIPTION "Postprocessing a postprocessing app")
+  SET(CPACK_COMPONENT_POSTPROCESSING_EXEC_GROUP "Executables")
+  
+  SET(CPACK_COMPONENT_BARRACUDA_OCCA_DISPLAY_NAME "OCCA sources")
+  SET(CPACK_COMPONENT_BARRACUDA_OCCA_DESCRIPTION "OCCA sources")
+  SET(CPACK_COMPONENT_BARRACUDA__OCCA_GROUP "OCCA")
+
+  SET(CPACK_COMPONENT_BARRACUDA_OCCA_KERNELS_DISPLAY_NAME "Barracuda occa kernels")
+  SET(CPACK_COMPONENT_BARRACUDA_OCCA_KERNELS_DESCRIPTION "Barracuda occa kernels")
+  SET(CPACK_COMPONENT_BARRACUDA_OCCA_KERNELS_GROUP "OCCAKernels")
+
+  IF(WIN32 AND NOT UNIX)
+    SET(CPACK_GENERATOR "7Z")
+    SET(GENERATOR_EXTENSION "7z")
+  ELSE()
+    SET(CPACK_GENERATOR "TGZ")
+    SET(GENERATOR_EXTENSION "tar.gz")
+  ENDIF()
+  CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/BarracudaPackageName.txt.in ${CMAKE_BINARY_DIR}/BarracudaPackageName.txt)
+  INCLUDE(InstallRequiredSystemLibraries)
+  INCLUDE(CPack)
+ENDIF()
