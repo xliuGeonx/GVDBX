@@ -244,12 +244,13 @@ endfunction()
 
 function(_LINK ) 
     set (options "")
-    set (multiValueArgs PROJECT OPT DEBUG PLATFORM )
+	set (oneValueArgs "" )
+    set (multiValueArgs TARGET OPT DEBUG PLATFORM )
     CMAKE_PARSE_ARGUMENTS(_LINK "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
 	set_property(GLOBAL PROPERTY DEBUG_CONFIGURATIONS Debug PARENT_SCOPE ) 
 
-	set (PROJ_NAME ${_LINK_PROJECT})
+	set (PROJ_NAME ${_LINK_TARGET})
 
 	foreach (loop_var IN ITEMS ${_LINK_PLATFORM} )
 		target_link_libraries( ${PROJ_NAME} general ${loop_var} )	

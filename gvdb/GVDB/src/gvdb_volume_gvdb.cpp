@@ -3291,8 +3291,8 @@ Node* VolumeGVDB::getChild(Node* curr, uint ndx)
 	#ifdef USE_BITMASKS
 		ch = *(clist + ndx);
 	#else
-		int vox = 0;
-		int sum = 0;
+		uint vox = 0;
+		uint sum = 0;
 		ndx++;
 		for (; sum < ndx && vox < getVoxCnt(curr->mLev); vox++ ) {
 			if ( *(clist + vox) != ID_UNDEF64) sum++;

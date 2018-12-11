@@ -16,9 +16,9 @@ Message(STATUS "BASE_DIRECTORY = ${BASE_DIRECTORY}")
 Message(STATUS "CMAKE_CURRENT_SOURCE_DIR = ${CMAKE_CURRENT_SOURCE_DIR}")
 
 # Specify the list of directories to search for cmake modules.
-set(CMAKE_MODULE_PATH
-    ${BASE_DIRECTORY}/cmake
-)
+# set(CMAKE_MODULE_PATH
+    # ${BASE_DIRECTORY}/cmake/Modules
+# )
 
 set( CMAKE_FIND_ROOT_PATH "")
 

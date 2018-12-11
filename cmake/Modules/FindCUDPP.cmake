@@ -6,12 +6,7 @@ unset(CUDPP_FOUND CACHE)
 unset(CUDPP_INCLUDE_DIR CACHE)
 
 if ( NOT DEFINED CUDPP_ROOT_DIR )
-  if (WIN32)
-    get_filename_component ( BASEDIR "${CMAKE_MODULE_PATH}/../../shared_cudpp" REALPATH )
-  else()
-    get_filename_component ( BASEDIR "/usr/local/cudpp/" REALPATH )
-  endif()
-  set ( CUDPP_ROOT_DIR ${BASEDIR} CACHE PATH "Location of cuDPP library" FORCE)
+  MESSAGE(FATAL_ERROR "CUDPP_ROOT_DIR is not defined" )
 endif()
 set( CUDPP_FOUND "YES" )
 
