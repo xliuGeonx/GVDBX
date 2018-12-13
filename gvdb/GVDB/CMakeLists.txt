@@ -105,7 +105,7 @@ SET(GVDB_LIB_DIR ${GVDB_LIB_DIR} PARENT_SCOPE)
 #####################################################################################
 # Linkage
 #
-_LINK ( TARGET ${GVDB_LIB} OPT ${LIBRARIES_OPTIMIZED} DEBUG ${LIBRARIES_DEBUG} PLATFORM ${PLATFORM_LIBRARIES} )
+_LINK ( TARGET ${GVDB_LIB} OPT ${LIBRARIES_OPTIMIZED} PLATFORM ${PLATFORM_LIBRARIES} )
 
 # -- copy shaders --
 #
