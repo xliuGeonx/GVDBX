@@ -84,20 +84,20 @@ ENDFUNCTION()
 function( _INSTALL )   
   set (options "")
   set (oneValueArgs DESTINATION SOURCE OUTPUT )
-  set (multiValueArgs FILES )
+  set (multiValueArgs TARGET FILES )
   CMAKE_PARSE_ARGUMENTS(_INSTALL "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
   if ( _INSTALL_SOURCE ) 
      set ( _INSTALL_SOURCE "${_INSTALL_SOURCE}/" )	  
   endif()
   set ( OUT_LIST ${${_INSTALL_OUTPUT}} )
-
+  set ( PROJ_NAME ${_INSTALL_TARGET})
   if ( WIN32 )      
       # Windows - copy to desintation at post-build
       file ( MAKE_DIRECTORY "${_INSTALL_DESTINATION}/" )
       foreach (_file ${_INSTALL_FILES} )	     
           message ( STATUS "Install: ${_INSTALL_SOURCE}${_file} -> ${_INSTALL_DESTINATION}" )
           add_custom_command(
-            TARGET ${PROJNAME} POST_BUILD
+            TARGET ${PROJ_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy ${_INSTALL_SOURCE}${_file} ${_INSTALL_DESTINATION}
           )          
  	  list ( APPEND OUT_LIST "${_INSTALL_SOURCE}${_file}" )
@@ -121,11 +121,11 @@ endfunction()
 function( _INSTALL_PTX )   
   set (options "")
   set (oneValueArgs DESTINATION OUTPUT )
-  set (multiValueArgs FILES )
+  set (multiValueArgs TARGET FILES )
   CMAKE_PARSE_ARGUMENTS(_INSTALL_PTX "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   set ( OUT_LIST ${${_INSTALL_PTX_OUTPUT}} )
-
+  set ( PROJ_NAME ${_INSTALL_PTX_TARGET})
   unset ( PTX_FIXED )
 
   if ( WIN32 )   
@@ -135,7 +135,7 @@ function( _INSTALL_PTX )
  	get_filename_component ( _ptxpath ${_file} DIRECTORY )
  	get_filename_component ( _ptxparent ${_ptxpath} DIRECTORY )   # parent directory
 	set ( _fixed "${_ptxparent}/${_ptxbase}.ptx" )                # copy to parent to remove compile time $(Configuration) path
-  	add_custom_command ( TARGET ${PROJNAME} POST_BUILD
+  	add_custom_command ( TARGET ${PROJ_NAME} POST_BUILD
           COMMAND ${CMAKE_COMMAND} -E copy  ${_file} ${_fixed}
         )
 	list ( APPEND PTX_FIXED ${_file} )     # NOTE: Input of FILES must be list of ptx *with paths*	
@@ -149,7 +149,7 @@ function( _INSTALL_PTX )
       get_filename_component ( _ptxbase ${_file} NAME_WE )
       string ( SUBSTRING ${_ptxbase} 27 -1 _ptxname )
       set ( _fixed "${_ptxpath}/${_ptxname}.ptx" )
-      add_custom_command ( TARGET ${PROJNAME} PRE_LINK
+      add_custom_command ( TARGET ${PROJ_NAME} PRE_LINK
         COMMAND ${CMAKE_COMMAND} -E copy  ${_file} ${_fixed}
         )      
       list ( APPEND PTX_FIXED ${_fixed} )
@@ -159,7 +159,7 @@ function( _INSTALL_PTX )
   
   # Install PTX
   message ( STATUS "PTX files: ${PTX_FIXED}" )
-  _INSTALL ( FILES ${PTX_FIXED} DESTINATION ${_INSTALL_PTX_DESTINATION} )
+  _INSTALL (TARGET ${PROJ_NAME} FILES ${PTX_FIXED} DESTINATION ${_INSTALL_PTX_DESTINATION} )
 
   set ( ${_INSTALL_PTX_OUTPUT} ${OUT_LIST} PARENT_SCOPE )
 

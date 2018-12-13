@@ -52,6 +52,14 @@ FUNCTION(COLLECT_DDL_FROM_FILES  files_list)
           FILE(GLOB  all_f ${f_dir}/${f_pattern})
           LIST(APPEND dlls_list ${all_f})
         ENDIF()
+	  ELSEIF(${f_ext} STREQUAL ".ptx")
+        IF(WIN32)
+          LIST(APPEND dlls_list ${f})
+        ENDIF()
+	  ELSEIF(${f_ext} STREQUAL ".glsl")
+        IF(WIN32)
+          LIST(APPEND dlls_list ${f})
+        ENDIF()
       ELSEIF(${f_ext} STREQUAL ".dll")
         IF(WIN32)
           LIST(APPEND dlls_list ${f})
@@ -86,16 +94,14 @@ ENDFUNCTION()
 if(NOT PROJECT_DIRECTORY)
   SET(PROJECT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
+# MESSAGE(WARNING "PROJECT_DIRECTORY: ${PROJECT_DIRECTORY}" )
 # Additional folders to search for CMake modules
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_DIRECTORY}/cmake/Modules/")
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_DIRECTORY}/cmake/Modules")
 # Define project with default languages (C and CXX)
 PROJECT(GVDBX)
 # -----------------------------------------------------------------------------
 # ----------------------------- Project configuration -------------------------
 # -----------------------------------------------------------------------------
-
-# Environment
-SET(ENV_PLATFORM $ENV{PLATFORM})
 
 # find Boost
 SET(Boost_NO_SYSTEM_PATHS true)
@@ -139,24 +145,5 @@ if ( NOT DEFINED CONTRIB_ROOT_DIR )
   MESSAGE(FATAL_ERROR "CONTRIB_ROOT_DIR is not defined" )
 endif()
 
-# -- Include cmake modules
-find_path ( HELPERS "Helpers.cmake" HINTS 
-    ${CMAKE_MODULE_PATH}
-)
-
-if ( ${HELPERS} STREQUAL "HELPERS-NOTFOUND" )
-    # set ( CMAKE_MODULE_PATH "***FULL PATH TO***/gvdb/sample_utils/" CACHE PATH "Full path to gvdb/sample_utils/" )
-    message ( FATAL_ERROR "\n
-    Please set the CMAKE_MODULE_PATH 
-    to the full path of for /gvdb/sample_utils/ above
-    and configure again." )
-endif()
-include ( "${CMAKE_MODULE_PATH}/Helpers.cmake" )    
-include ( "${CMAKE_MODULE_PATH}/Packages.cmake" )  
-
-#####################################################################################
-# Add CUDA
-#
-_add_package_CUDA()
 # -- Include directories --
 ADD_SUBDIRECTORY(gvdb)
