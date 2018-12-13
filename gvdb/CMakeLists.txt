@@ -1,4 +1,5 @@
-# GVDBX 2017
+# GVDBX 2018
+# Developped By Trigolds
 # GVDB library CMakeLists
 # -----------------------------------------------------------------------------
 # ----------------------------- Project configuration -------------------------
@@ -18,3 +19,4 @@
 # ENDFOREACH()
 
 ADD_SUBDIRECTORY(GVDB)
+ADD_SUBDIRECTORY(TestCases)

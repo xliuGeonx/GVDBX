@@ -10,15 +10,16 @@
 #
 
 include(FindPackageHandleStandardArgs)
+if ( NOT DEFINED GLEW_DIR )
+  SET(GLEW_DIR ${PROJECT_DIRECTORY}/gvdb/GVDB/glew)
+endif()
 
 if (WIN32)
     find_path( GLEW_INCLUDE_DIR
         NAMES
             GL/glew.h
         PATHS
-            ${GVDB_LIB_SOURCE_DIR}/glew/include
-            ${GVDB_LIB_SOURCE_DIR}/../glew/include
-            ${GVDB_LIB_SOURCE_DIR}/../../glew/include
+            ${GLEW_DIR}/include
             ${GLEW_LOCATION}/include
             $ENV{GLEW_LOCATION}/include
             $ENV{PROGRAMFILES}/GLEW/include
@@ -29,9 +30,7 @@ if (WIN32)
         NAMES
             glew.c
         PATHS
-            ${GVDB_LIB_SOURCE_DIR}/glew/src
-            ${GVDB_LIB_SOURCE_DIR}/../glew/src
-            ${GVDB_LIB_SOURCE_DIR}/../../glew/src
+            ${GLEW_DIR}/src
             ${GLEW_LOCATION}/src
             $ENV{GLEW_LOCATION}/src
             $ENV{PROGRAMFILES}/GLEW/src
@@ -85,9 +84,7 @@ if (${CMAKE_HOST_UNIX})
         NAMES
             GL/glew.h
         PATHS
-            ${GVDB_LIB_SOURCE_DIR}/glew/include
-            ${GVDB_LIB_SOURCE_DIR}/../glew/include
-            ${GVDB_LIB_SOURCE_DIR}/../../glew/include
+            ${GLEW_DIR}/include
             ${GLEW_LOCATION}/include
             $ENV{GLEW_LOCATION}/include
             /usr/include
@@ -101,9 +98,7 @@ if (${CMAKE_HOST_UNIX})
         NAMES
             glew.c
         PATHS
-            ${GVDB_LIB_SOURCE_DIR}/glew/src
-            ${GVDB_LIB_SOURCE_DIR}/../glew/src
-            ${GVDB_LIB_SOURCE_DIR}/../../glew/src
+            ${GLEW_DIR}/src
             DOC "The directory where GL/glew.c resides" )
     find_library( GLEW_LIBRARY
         NAMES

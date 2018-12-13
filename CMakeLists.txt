@@ -1,8 +1,9 @@
-# BARRACUDA - Copyright (C) 2015-2016 geonX
-#
-# Please report all bugs and problems to <support@geonx.com>.
-# 
-# Main CMakeLists
+# GVDBX 2018
+# Developped By Trigolds
+# Project CMakeLists
+# -----------------------------------------------------------------------------
+# ----------------------------- Project configuration -------------------------
+# -----------------------------------------------------------------------------
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
 # CMAKE_POLICY(SET CMP0054 NEW)
@@ -81,12 +82,12 @@ FUNCTION(COLLECT_DDL_FROM_FILES  files_list)
   SET(USED_DLLS ${USED_DLLS} ${dlls_list} PARENT_SCOPE)
 ENDFUNCTION()
 
-# Additional folders to search for CMake modules
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+
 if(NOT PROJECT_DIRECTORY)
   SET(PROJECT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
-
+# Additional folders to search for CMake modules
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_DIRECTORY}/cmake/Modules/")
 # Define project with default languages (C and CXX)
 PROJECT(GVDBX)
 # -----------------------------------------------------------------------------
@@ -133,5 +134,29 @@ IF(NOT Boost_USE_STATIC_LIBS )
   COLLECT_DDL_FROM_FILES(BOOST_DLLS)
 ENDIF()
 
+# -- Include contributes --
+if ( NOT DEFINED CONTRIB_ROOT_DIR )
+  MESSAGE(FATAL_ERROR "CONTRIB_ROOT_DIR is not defined" )
+endif()
+
+# -- Include cmake modules
+find_path ( HELPERS "Helpers.cmake" HINTS 
+    ${CMAKE_MODULE_PATH}
+)
+
+if ( ${HELPERS} STREQUAL "HELPERS-NOTFOUND" )
+    # set ( CMAKE_MODULE_PATH "***FULL PATH TO***/gvdb/sample_utils/" CACHE PATH "Full path to gvdb/sample_utils/" )
+    message ( FATAL_ERROR "\n
+    Please set the CMAKE_MODULE_PATH 
+    to the full path of for /gvdb/sample_utils/ above
+    and configure again." )
+endif()
+include ( "${CMAKE_MODULE_PATH}/Helpers.cmake" )    
+include ( "${CMAKE_MODULE_PATH}/Packages.cmake" )  
+
+#####################################################################################
+# Add CUDA
+#
+_add_package_CUDA()
 # -- Include directories --
 ADD_SUBDIRECTORY(gvdb)

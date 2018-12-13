@@ -1,6 +1,40 @@
 
 set(VERSION "1.3.3")
 
+if ( MSVC_VERSION )
+	# MSVC_VERSION:
+	# https://en.wikipedia.org/wiki/Microsoft_Visual_C%2B%2B
+	# 1600 - VS 11.0 - 2010
+	# 1700 - VS 11.0 - 2012
+	# 1800 - VS 12.0 - 2013
+	# 1900 - VS 14.0 - 2015
+	# 1910 - VS 14.1 - 2017
+	# 1911 - VS 14.1 - 2017
+	# 1912 - VS 15.0 - 2017
+   	message ( STATUS "MSVC_VERSION = ${MSVC_VERSION}" )
+	if ( ${MSVC_VERSION} EQUAL "1600" ) 
+	   SET ( MSVC_YEAR "2010" )
+	endif()
+	if ( ${MSVC_VERSION} EQUAL "1700" ) 
+	   SET ( MSVC_YEAR "2012" )
+	endif()
+	if ( ${MSVC_VERSION} EQUAL "1800" ) 
+	   SET ( MSVC_YEAR "2013" )
+	endif()
+	if ( ${MSVC_VERSION} EQUAL "1900" ) 
+	   SET ( MSVC_YEAR "2015" )
+	endif()
+	if ( ${MSVC_VERSION} EQUAL "1910" ) 
+	   SET ( MSVC_YEAR "2017" )
+	endif()
+	if ( ${MSVC_VERSION} EQUAL "1911" ) 
+	   SET ( MSVC_YEAR "2017" )
+	endif()
+	if ( ${MSVC_VERSION} EQUAL "1912" ) 
+	   SET ( MSVC_YEAR "2017" )    # USE LIBS FOR VS2015 due to cl.exe issue
+	endif()
+endif()
+
 set(SUPPORT_NVTOOLSEXT OFF CACHE BOOL "Use NSight for custom markers")
 if(WIN32)
   SET( MEMORY_LEAKS_CHECK OFF CACHE BOOL "Check for Memory leaks" )
@@ -195,6 +229,35 @@ macro ( _FIND_LOCALPACKAGE_OPTIX )
   endif()
 endmacro ()
 
+#####################################################################################
+# Optional GVDB
+#
+macro(_add_package_GVDB)
+
+  message( STATUS "<-- Searching for package GVDB")    
+  find_package(GVDB)
+
+  if ( GVDB_FOUND )
+	message( STATUS "--> Using package GVDB. ${GVDB_LIB_DIR} ")    
+    include_directories( ${GVDB_INCLUDE_DIR} )
+    add_definitions(-DUSE_GVDB)
+	add_definitions(-DSIM_CODE)
+    if (WIN32)
+       LIST(APPEND LIBRARIES_OPTIMIZED ${GVDB_LIB_DIR}/${GVDB_LIB} )
+       LIST(APPEND LIBRARIES_DEBUG ${GVDB_LIB_DIR}/${GVDB_LIB} )
+	else ()
+	   find_library( LIBGVDB gvdb HINTS ${GVDB_LIB_DIR} )
+	   LIST(APPEND LIBRARIES_OPTIMIZED ${LIBGVDB} )
+       LIST(APPEND LIBRARIES_DEBUG ${LIBGVDB} )
+	endif()
+    LIST(APPEND PACKAGE_SOURCE_FILES ${GVDB_INCLUDE_DIR}/${GVDB_HEADERS} )  	
+    source_group(GVDB FILES ${GVDB_INCLUDE_DIR}/${GVDB_HEADERS} ) 
+ else()
+    message( FATAL_ERROR "--> Unable to find GVDB") 
+ endif()
+
+endmacro()
+
 
 #####################################################################################
 # Optional ZLIB
@@ -289,6 +352,37 @@ macro(_add_package_OpenVDB)
  else()
      SET(USE_OPENVDB OFF CACHE BOOL "Use OpenVDB" FORCE)
  endif()
+endmacro()
+
+#####################################################################################
+# Optional Utils package
+#
+macro(_add_package_Utils)
+   
+   find_package(Utils)
+
+   if ( UTILS_FOUND )   
+		
+		if (WIN32)
+			# Windows platform
+			if(REQUIRE_OPENGL)				
+				add_definitions(-DBUILD_OPENGL)
+				set(PLATFORM_LIBRARIES ${OPENGL_LIBRARY} )				
+			endif()
+		else()
+			# Linux platform
+			if(REQUIRE_OPENGL)
+				add_definitions(-DBUILD_OPENGL)
+				set(PLATFORM_LIBRARIES GL GLU GLEW X11)				
+			endif()
+			if(USE_NVTX)
+				find_library(LIBNVTX nvToolsExt HINTS ${CUDA_TOOLKIT_ROOT_DIR}/lib64)
+				LIST(APPEND LIBRARIES_OPTIMIZED ${LIBNVTX})
+				LIST(APPEND LIBRARIES_DEBUG {LIBNVTX})
+			endif()			
+		endif()		
+	endif()
+
 endmacro()
 
 

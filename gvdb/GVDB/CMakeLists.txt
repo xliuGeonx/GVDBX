@@ -1,14 +1,19 @@
+# GVDBX 2018
+# Developped By Trigolds
+# GVDB library CMakeLists
+# -----------------------------------------------------------------------------
+# ----------------------------- Project configuration -------------------------
+# -----------------------------------------------------------------------------
+
 SET(GVDB_LIB "${PROJECT_NAME}.GVDB_LIB")
 SET(GVDB_LIB ${GVDB_LIB} PARENT_SCOPE)
 Message(STATUS "-------------------------------")
 Message(STATUS "Processing Library ${GVDB_LIB}:")
-
 #####################################################################################
 # Included Cmakes
 SET(GVDB_LIB_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-include ( "${PROJECT_DIRECTORY}/cmake/Modules/Helpers.cmake" )    
-include ( "${PROJECT_DIRECTORY}/cmake/Modules/Packages.cmake" )  
-
+SET(GVDB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+SET(GVDB_INCLUDE_DIR ${GVDB_INCLUDE_DIR} PARENT_SCOPE)
 include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/src")    
 
 #####################################################################################
@@ -31,10 +36,6 @@ if ( USE_NVTX )
    add_definitions(-DUSE_NVTX)
 endif()
 
-#####################################################################################
-# Add CUDA
-#
-_add_package_CUDA()
 #####################################################################################
 # Add CUDPP Library
 #
@@ -94,14 +95,25 @@ if( WIN32 AND NOT GLUT_FOUND)
   add_definitions(/wd4244) #remove double to float conversion warning
   add_definitions(/wd4305) #remove double to float truncation warning
   add_library (${GVDB_LIB} ${LIB_TYPE} ${GVDB_LIB_SOURCE_FILES} ${CUDA_FILES} )
+  Message(WARNING "GVDB_LIB_SOURCE_FILES: ${GVDB_LIB_SOURCE_FILES}")
+  Message(WARNING "CUDA_FILES: ${CUDA_FILES}")
 else()
   add_library (${GVDB_LIB} ${LIB_TYPE} ${GVDB_LIB_SOURCE_FILES} ${CUDA_FILES} ${PTX_FILES} )
 endif()
-
+SET(GVDB_LIB_DIR ${CMAKE_CURRENT_BINARY_DIR})
+SET(GVDB_LIB_DIR ${GVDB_LIB_DIR} PARENT_SCOPE)
 #####################################################################################
 # Linkage
 #
 _LINK ( TARGET ${GVDB_LIB} OPT ${LIBRARIES_OPTIMIZED} DEBUG ${LIBRARIES_DEBUG} PLATFORM ${PLATFORM_LIBRARIES} )
 
+# -- copy shaders --
+#
+FILE( GLOB SHADERS shaders/*.glsl)
+MESSAGE(STATUS "Shaders that will be copied: ${SHADERS}")
+FOREACH( f ${SHADERS})
+  ADD_CUSTOM_COMMAND(TARGET ${GVDB_LIB} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${f} $<TARGET_FILE_DIR:${GVDB_LIB}> )  
+ENDFOREACH() 
 
-
+LIST(APPEND GVDB_DLLS ${SHADERS})
+SET(GVDB_DLLS ${GVDB_DLLS} PARENT_SCOPE)
