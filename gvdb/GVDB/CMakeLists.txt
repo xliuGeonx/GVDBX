@@ -69,7 +69,7 @@ SET(COMMON_SOURCE_FILES ${GLEW_SOURCE} )
 #####################################################################################
 # Custom Build for CUDA files
 #
-file(GLOB CUDA_FILES RELATIVE "${BASE_DIRECTORY}" kernels/*.cu kernels/*.cuh )
+file(GLOB CUDA_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" kernels/*.cu kernels/*.cuh )
 message ( STATUS "Located CUDA kernels: ${CUDA_FILES}" )
 if ( NOT DEFINED CUDA_ARCH )
    SET( CUDA_ARCH "compute_30" CACHE STRING "CUDA Architecture target")

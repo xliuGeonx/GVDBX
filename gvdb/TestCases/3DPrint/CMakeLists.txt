@@ -17,6 +17,9 @@ find_path ( HELPERS "Helpers.cmake" HINTS
     ${CMAKE_MODULE_PATH}
     ${CONTRIB_ROOT_DIR}/sample_utils
 )
+
+# SET(PTX_FILES_DIR ${CONTRIB_ROOT_DIR}/sample_utils CACHE PATH "ptx files for 3Dprint")
+
 if ( ${HELPERS} STREQUAL "HELPERS-NOTFOUND" )
     set ( CMAKE_MODULE_PATH "***FULL PATH TO***/gvdb/cmake/Modules" CACHE PATH "Full path to gvdb/cmake/Modules" )
     message ( FATAL_ERROR "\n
@@ -56,12 +59,12 @@ include_directories(${GVDB_INCLUDE_DIR})
 #
 _add_package_CUDA()
 
-####################################################################################
-# Compile PTX Files
-#
-file(GLOB CUDA_FILES RELATIVE "${BASE_DIRECTORY}" *.cu *.cuh)
-message ( STATUS "Build CUDA kernels: ${CUDA_FILES}" )
-_COMPILEPTX ( SOURCES ${CUDA_FILES} TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR} GENERATED PTX_FILES INCLUDE "${CMAKE_CURRENT_SOURCE_DIR},${GVDB_INCLUDE_DIR}" OPTIONS -arch=compute_30 -code=sm_30 --ptxas-options=-v -O3 --use_fast_math --maxrregcount=128 )
+# ####################################################################################
+# # Compile PTX Files
+# #
+# file(GLOB CUDA_FILES RELATIVE "${PTX_FILES_DIR}" *.cu *.cuh)
+# message ( STATUS "Build CUDA kernels: ${CUDA_FILES}" )
+# _COMPILEPTX ( SOURCES ${CUDA_FILES} TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR} GENERATED PTX_FILES INCLUDE "${CMAKE_CURRENT_SOURCE_DIR},${GVDB_INCLUDE_DIR}" OPTIONS -arch=compute_30 -code=sm_30 --ptxas-options=-v -O3 --use_fast_math --maxrregcount=128 )
 
 #####################################################################################
 # Asset Path
