@@ -95,8 +95,8 @@ if( WIN32 AND NOT GLUT_FOUND)
   add_definitions(/wd4244) #remove double to float conversion warning
   add_definitions(/wd4305) #remove double to float truncation warning
   add_library (${GVDB_LIB} ${LIB_TYPE} ${GVDB_LIB_SOURCE_FILES} ${CUDA_FILES} )
-  Message(WARNING "GVDB_LIB_SOURCE_FILES: ${GVDB_LIB_SOURCE_FILES}")
-  Message(WARNING "CUDA_FILES: ${CUDA_FILES}")
+  # Message(WARNING "GVDB_LIB_SOURCE_FILES: ${GVDB_LIB_SOURCE_FILES}")
+  # Message(WARNING "CUDA_FILES: ${CUDA_FILES}")
 else()
   add_library (${GVDB_LIB} ${LIB_TYPE} ${GVDB_LIB_SOURCE_FILES} ${CUDA_FILES} ${PTX_FILES} )
 endif()
