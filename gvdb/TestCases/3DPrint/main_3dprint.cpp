@@ -115,7 +115,7 @@ bool Sample::init ()
 	// Load polygons
 	// This loads an obj file into scene memory on cpu.
 	printf ( "Loading polygon model.\n" );
-	gvdb1.getScene()->AddModel ( "lucy.obj", 1.0, 0, 0, 0 );
+	gvdb1.getScene()->AddModel ( "template.obj", 1.0, 0, 0, 0 );
 	gvdb1.CommitGeometry( 0 );					// Send the polygons to GPU as OpenGL VBO
 
 #ifdef USE_GVDB2
@@ -156,7 +156,7 @@ bool Sample::init ()
 	// The voxel resolution of a rasterized part is the maximum number of voxels along each axis, 
 	// and is found by dividing the part size by the voxel size.
 	// To limit the resolution, one can invert the equation and find the voxel size for a given resolution.	
-	Vector3DF voxelsize ( 0.2f, 0.2f, 0.2f );	// Voxel size (mm)
+	Vector3DF voxelsize ( 2e-1f, 2e-1f, 2e-1f );	// Voxel size (mm)
 
 	// Poly-to-Voxels
 	// Converts polygons-to-voxels using the GPU graphics pipeline.		

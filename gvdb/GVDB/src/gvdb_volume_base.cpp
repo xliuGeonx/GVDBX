@@ -58,11 +58,11 @@ void VolumeBase::CommitGeometry ( int model_id )
 void VolumeBase::CommitGeometry ( Model* m )
 {
 	#ifdef BUILD_OPENGL
-		// Create VAO
+		// Create VAO (Vertex Array Object)
 		if ( m->vertArrayID == -1 )  glGenVertexArrays ( 1, (GLuint*) &m->vertArrayID );
 		glBindVertexArray ( m->vertArrayID );
 
-		// Update Vertex VBO
+		// Update Vertex VBO (Vertex Buffer Object)
 		if ( m->vertBufferID == -1 ) glGenBuffers( 1, (GLuint*) &m->vertBufferID );	
 		//glBindBuffer ( GL_ARRAY_BUFFER, vertBufferID );	
 		//glBufferData ( GL_ARRAY_BUFFER, vertCount * vertStride, vertBuffer, GL_STATIC_DRAW );
