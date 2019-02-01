@@ -115,7 +115,7 @@ bool Sample::init ()
 	// Load polygons
 	// This loads an obj file into scene memory on cpu.
 	printf ( "Loading polygon model.\n" );
-	gvdb1.getScene()->AddModel ( "template.obj", 1.0, 0, 0, 0 );
+	gvdb1.getScene()->AddModel ( "lucy.obj", 1.0, 0, 0, 0 );
 	gvdb1.CommitGeometry( 0 );					// Send the polygons to GPU as OpenGL VBO
 
 #ifdef USE_GVDB2
@@ -128,7 +128,7 @@ bool Sample::init ()
 	// An apron of 1 is used for correct smoothing and trilinear surface rendering.
 	printf ( "Configure.\n" );
 	gvdb1.Configure ( 3, 3, 3, 3, 5 );	
-	gvdb1.SetChannelDefault ( 16, 16, 1 );
+	gvdb1.SetChannelDefault ( 16, 16, 16 );
 	gvdb1.AddChannel ( 0, T_FLOAT, 1 );
 
 #ifdef USE_GVDB2

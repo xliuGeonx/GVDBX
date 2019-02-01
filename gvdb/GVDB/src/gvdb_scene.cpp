@@ -24,6 +24,7 @@
 #include "gvdb_scene.h"
 #include "loader_ObjarReader.h" 
 #include "loader_OBJReader.h" 
+#include "loader_STLReader.h"
 #include "string_helper.h"
 using namespace nvdb;
 
@@ -129,6 +130,11 @@ void Scene::LoadModel ( Model* m, std::string filestr, float scale, float tx, fl
 		OBJReader load_obj;
 		load_obj.LoadFile ( m, filename, mSearchPaths );
 	}
+  else if (STLReader::isMyFile(filename))
+  {
+    STLReader load_stl;
+    load_stl.LoadFile(m, filename, mSearchPaths);
+  }
 	// Rescale if desired
 	m->Transform ( Vector3DF(tx,ty,tz), Vector3DF(scale,scale,scale) );
 	
